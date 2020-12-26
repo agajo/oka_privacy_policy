@@ -7,142 +7,147 @@ import 'package:shared_preferences/shared_preferences.dart';
 // 日本語を正式版とする、と書いてあるので、日本語版を読みたくなる人がいるかもしれないから。
 class PrivacyPolicyWidget extends StatefulWidget {
   const PrivacyPolicyWidget(
-      {@required this.afterAgreeWidget, this.enText, this.jaText, this.zhText});
+      {@required this.afterAgreeWidget,
+      @required this.newestPolicyVersion,
+      @required this.enText,
+      @required this.jaText,
+      @required this.zhText});
   final Widget afterAgreeWidget;
+  final int newestPolicyVersion;
   final Widget enText;
   final Widget jaText;
   final Widget zhText;
 
+  static PrivacyPolicyWidgetState of(BuildContext context) {
+    return (context.getElementForInheritedWidgetOfExactType<
+            _PrivacyPolicyInherited>() as _PrivacyPolicyInherited)
+        .data;
+  }
+
   @override
-  _PrivacyPolicyWidgetState createState() => _PrivacyPolicyWidgetState();
+  PrivacyPolicyWidgetState createState() => PrivacyPolicyWidgetState();
 }
 
-class _PrivacyPolicyWidgetState extends State<PrivacyPolicyWidget> {
-  String languageCode;
+class PrivacyPolicyWidgetState extends State<PrivacyPolicyWidget> {
+  String _languageCode;
+  bool _isAgreed;
+  static const String _agreedPolicyVersionKey =
+      'agreed_privacy_policy_version_key';
+
   @override
-  void initState() {
-    super.initState();
-    Future.delayed(Duration.zero, () {
-      // setState()で囲む必要はないかもしれない。
+  void didChangeDependencies() {
+    _languageCode ??= Localizations.localeOf(context).languageCode;
+    SharedPreferences.getInstance().then((_prefs) {
       setState(() {
-        languageCode = Localizations.localeOf(context).languageCode;
+        if ((_prefs.getInt(_agreedPolicyVersionKey) ?? -1) ==
+            widget.newestPolicyVersion) {
+          _isAgreed = true;
+        } else {
+          print('privacy policy not agreed');
+          _isAgreed = false;
+        }
       });
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider<PrivacyPolicyNotifier>(
-      create: (_) => PrivacyPolicyNotifier(),
-      child: Consumer<PrivacyPolicyNotifier>(builder: (context, notifier, _) {
-        if (notifier.isAgreed == null) {
-          return Container(key: const Key('waiting for SharedPreferences'));
-        } else if (notifier.isAgreed == true) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute<void>(builder: (_) => widget.afterAgreeWidget),
-              (_) => false,
-            );
-          });
-          return Container();
-        } else {
-          return Scaffold(
-            key: const Key('privacy policy view'),
-            appBar: AppBar(
-              title: languageCode == 'ja'
-                  ? const Text('利用規約・プライバシーポリシー')
-                  : languageCode == 'zh'
-                      ? const Text('服务条款和隐私政策')
-                      : const Text('Terms of Service / Privacy Policy'),
-            ),
-            body: SafeArea(
-              child: Column(children: [
-                DropdownButton(
-                  // supportedLocalesでenとjaとzhしか与えてないので、この3つのどれかになる
-                  value: languageCode,
-                  onChanged: (String value) {
-                    setState(() {
-                      languageCode = value;
-                    });
-                  },
-                  items: ['en', 'ja', 'zh']
-                      .map((value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value == 'ja'
-                              ? '日本語'
-                              : value == 'zh'
-                                  ? '中文'
-                                  : 'English')))
-                      .toList(),
-                ),
-                Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: languageCode == 'ja'
-                        ? widget.jaText
-                        : languageCode == 'zh'
-                            ? widget.zhText
-                            : widget.enText,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: RaisedButton(
-                      key: const Key('privacy policy agree button'),
-                      color: Colors.blue[300],
-                      child: languageCode == 'ja'
-                          ? const Text('同意する')
-                          : languageCode == 'zh'
-                              ? const Text('同意')
-                              : const Text('Agree'),
-                      onPressed: () {
-                        notifier.agree();
-                      }),
-                ),
-              ]),
-            ),
-          );
-        }
-      }),
-    );
-  }
-}
-
-class PrivacyPolicyNotifier extends ChangeNotifier {
-  PrivacyPolicyNotifier() {
-    _init();
-  }
-  static const String agreedPolicyVersionKey =
-      'agreed_privacy_policy_version_key';
-  static const int newestPolicyVersion = 1;
-  bool _isAgreed;
-  bool get isAgreed => _isAgreed;
-
-  Future<void> _init() async {
-    // シングルトンなのでどこから何回取得しても同じSharedPreferencesインスタンスが返る。
-    final _prefs = await SharedPreferences.getInstance();
-    if ((_prefs.getInt(agreedPolicyVersionKey) ?? 0) == newestPolicyVersion) {
-      _isAgreed = true;
-    } else {
-      print('privacy policy not agreed');
-      _isAgreed = false;
-    }
-    notifyListeners();
+    super.didChangeDependencies();
   }
 
   void agree() {
     SharedPreferences.getInstance().then((prefs) {
-      prefs.setInt(agreedPolicyVersionKey, newestPolicyVersion);
+      prefs.setInt(_agreedPolicyVersionKey, widget.newestPolicyVersion);
     });
     _isAgreed = true;
-    notifyListeners();
   }
 
   void disagree() {
     SharedPreferences.getInstance().then((prefs) {
-      prefs.remove(agreedPolicyVersionKey);
+      prefs.remove(_agreedPolicyVersionKey);
     });
     _isAgreed = false;
-    notifyListeners();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isAgreed == null) {
+      return Container(key: const Key('waiting for SharedPreferences'));
+    } else if (_isAgreed == true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute<void>(builder: (_) => widget.afterAgreeWidget),
+          (_) => false,
+        );
+      });
+      return Container();
+    } else {
+      return Scaffold(
+        key: const Key('privacy policy view'),
+        appBar: AppBar(
+          title: _languageCode == 'ja'
+              ? const Text('利用規約・プライバシーポリシー')
+              : _languageCode == 'zh'
+                  ? const Text('服务条款和隐私政策')
+                  : const Text('Terms of Service / Privacy Policy'),
+        ),
+        body: SafeArea(
+          child: Column(children: [
+            DropdownButton(
+              // supportedLocalesでenとjaとzhしか与えてないので、この3つのどれかになる
+              value: _languageCode,
+              onChanged: (String value) {
+                setState(() {
+                  _languageCode = value;
+                });
+              },
+              items: ['en', 'ja', 'zh']
+                  .map((value) => DropdownMenuItem(
+                      value: value,
+                      child: Text(value == 'ja'
+                          ? '日本語'
+                          : value == 'zh'
+                              ? '中文'
+                              : 'English')))
+                  .toList(),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: _languageCode == 'ja'
+                    ? widget.jaText
+                    : _languageCode == 'zh'
+                        ? widget.zhText
+                        : widget.enText,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: RaisedButton(
+                  key: const Key('privacy policy agree button'),
+                  color: Colors.blue[300],
+                  child: _languageCode == 'ja'
+                      ? const Text('同意する')
+                      : _languageCode == 'zh'
+                          ? const Text('同意')
+                          : const Text('Agree'),
+                  onPressed: () {
+                    agree();
+                  }),
+            ),
+          ]),
+        ),
+      );
+    }
+  }
+}
+
+class _PrivacyPolicyInherited extends InheritedWidget {
+  const _PrivacyPolicyInherited(
+      {Key key, @required Widget child, @required this.data})
+      : assert(child != null),
+        super(key: key, child: child);
+
+  final PrivacyPolicyWidgetState data;
+
+  @override
+  bool updateShouldNotify(_PrivacyPolicyInherited old) {
+    return false;
   }
 }
