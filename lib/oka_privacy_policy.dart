@@ -3,8 +3,6 @@ library oka_privacy_policy;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// ここだけ言語切替可能にするためのStateful
-// 日本語を正式版とする、と書いてあるので、日本語版を読みたくなる人がいるかもしれないから。
 class PrivacyPolicyWidget extends StatefulWidget {
   const PrivacyPolicyWidget(
       {@required this.afterAgreeWidget,
@@ -55,14 +53,19 @@ class PrivacyPolicyWidgetState extends State<PrivacyPolicyWidget> {
     SharedPreferences.getInstance().then((prefs) {
       prefs.setInt(_agreedPolicyVersionKey, widget.newestPolicyVersion);
     });
-    _isAgreed = true;
+    setState(() {
+      _isAgreed = true;
+    });
   }
 
+  // 同意するとPrivacyPolicyWidgetはWidgetツリーから消えるので、このdisagreeは呼ぶ方法がない
   void disagree() {
     SharedPreferences.getInstance().then((prefs) {
       prefs.remove(_agreedPolicyVersionKey);
     });
-    _isAgreed = false;
+    setState(() {
+      _isAgreed = false;
+    });
   }
 
   @override

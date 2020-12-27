@@ -1,6 +1,7 @@
 import 'package:example/privacy_policy_texts.dart';
 import 'package:flutter/material.dart';
 import 'package:oka_privacy_policy/oka_privacy_policy.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -24,9 +25,11 @@ class MyApp extends StatelessWidget {
         children: [
           Text('your contents'),
           RaisedButton(
-            child: Text('disagree the policy'),
+            child: Text('clear SharedPreferences'),
             onPressed: () {
-              PrivacyPolicyWidget.of(context).disagree();
+              SharedPreferences.getInstance().then((value) {
+                value.clear();
+              });
             },
           )
         ],
