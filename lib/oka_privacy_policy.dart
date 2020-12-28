@@ -9,12 +9,17 @@ class PrivacyPolicyWidget extends StatefulWidget {
       @required this.newestPolicyVersion,
       @required this.enText,
       @required this.jaText,
-      @required this.zhText});
+      @required this.zhText,
+      Key key})
+      : super(key: key);
   final Widget afterAgreeWidget;
   final int newestPolicyVersion;
   final Widget enText;
   final Widget jaText;
   final Widget zhText;
+
+  static const String agreedPolicyVersionKey =
+      'agreed_privacy_policy_version_key';
 
   static PrivacyPolicyWidgetState of(BuildContext context) {
     return (context.getElementForInheritedWidgetOfExactType<
@@ -29,15 +34,13 @@ class PrivacyPolicyWidget extends StatefulWidget {
 class PrivacyPolicyWidgetState extends State<PrivacyPolicyWidget> {
   String _languageCode;
   bool _isAgreed;
-  static const String _agreedPolicyVersionKey =
-      'agreed_privacy_policy_version_key';
 
   @override
   void didChangeDependencies() {
     _languageCode ??= Localizations.localeOf(context).languageCode;
     SharedPreferences.getInstance().then((_prefs) {
       setState(() {
-        if ((_prefs.getInt(_agreedPolicyVersionKey) ?? -1) ==
+        if ((_prefs.getInt(PrivacyPolicyWidget.agreedPolicyVersionKey) ?? -1) ==
             widget.newestPolicyVersion) {
           _isAgreed = true;
         } else {
@@ -51,7 +54,8 @@ class PrivacyPolicyWidgetState extends State<PrivacyPolicyWidget> {
 
   void agree() {
     SharedPreferences.getInstance().then((prefs) {
-      prefs.setInt(_agreedPolicyVersionKey, widget.newestPolicyVersion);
+      prefs.setInt(PrivacyPolicyWidget.agreedPolicyVersionKey,
+          widget.newestPolicyVersion);
     });
     setState(() {
       _isAgreed = true;
@@ -61,7 +65,7 @@ class PrivacyPolicyWidgetState extends State<PrivacyPolicyWidget> {
   // 同意するとPrivacyPolicyWidgetはWidgetツリーから消えるので、このdisagreeは呼ぶ方法がない
   void disagree() {
     SharedPreferences.getInstance().then((prefs) {
-      prefs.remove(_agreedPolicyVersionKey);
+      prefs.remove(PrivacyPolicyWidget.agreedPolicyVersionKey);
     });
     setState(() {
       _isAgreed = false;
