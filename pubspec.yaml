@@ -1,8 +1,8 @@
 name: oka_privacy_policy
 description: Oka's package about terms and privacy policy
 version: 0.0.1
-author:
-homepage:
+homepage: https://twitter.com/agajo_tech
+repository: https://github.com/agajo/oka_privacy_policy
 
 environment:
   sdk: ">=2.7.0 <3.0.0"
