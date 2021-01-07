@@ -10,6 +10,9 @@ class PrivacyPolicyWidget extends StatefulWidget {
       @required this.enText,
       @required this.jaText,
       @required this.zhText,
+      this.jaTitle,
+      this.enTitle,
+      this.zhTitle,
       Key key})
       : super(key: key);
   final Widget afterAgreeWidget;
@@ -17,6 +20,9 @@ class PrivacyPolicyWidget extends StatefulWidget {
   final Widget enText;
   final Widget jaText;
   final Widget zhText;
+  final String jaTitle;
+  final String enTitle;
+  final String zhTitle;
 
   static const String agreedPolicyVersionKey =
       'agreed_privacy_policy_version_key';
@@ -89,10 +95,10 @@ class PrivacyPolicyWidgetState extends State<PrivacyPolicyWidget> {
         key: const Key('privacy policy view'),
         appBar: AppBar(
           title: _languageCode == 'ja'
-              ? const Text('利用規約・プライバシーポリシー')
+              ? Text(widget.jaTitle ?? '利用規約・プライバシーポリシー')
               : _languageCode == 'zh'
-                  ? const Text('服务条款和隐私政策')
-                  : const Text('Terms of Service / Privacy Policy'),
+                  ? Text(widget.zhTitle ?? '服务条款和隐私政策')
+                  : Text(widget.enTitle ?? 'Terms of Service / Privacy Policy'),
         ),
         body: SafeArea(
           child: Column(children: [
